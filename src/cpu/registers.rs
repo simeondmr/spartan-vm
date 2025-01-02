@@ -26,6 +26,7 @@ pub struct Registers {
     mdr0: u32,
     mdr1: u32,
     poweron: bool,
+    global_register: usize,//TODO: This register will point after the .text section in order to allow access to .data and .bss section
     flags: Flags,
     instruction_registers: InstructionRegisters
 }
@@ -136,11 +137,12 @@ impl Flags {
 impl Registers {
     pub fn new() -> Self {
         Registers {
-            pc: 0,
-            sp: 20,
-            bp: 20,
+            pc: 6, //test value
+            sp: 20,//test value
+            bp: 20,//test value
             mdr0: 0,
             mdr1: 0,
+            global_register: 0,
             poweron: true,
             instruction_registers: InstructionRegisters::new(),
             flags: Flags::new(),
@@ -247,8 +249,17 @@ impl Registers {
         Ok(())
     }
 
+    #[allow(dead_code)]
+    pub fn global_register(&self) -> usize {
+        self.global_register
+    }
+
+    #[allow(dead_code)]
+    pub fn set_global_register(&mut self, global_register: usize) {
+        self.global_register = global_register;
+    }
+
     pub fn poweroff(&mut self) {
         self.poweron = false;
     }
-
 }

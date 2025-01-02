@@ -15,6 +15,24 @@ impl Ram {
         }
     }
 
+    pub fn read_stack(&self, from: usize, len: usize) -> Result<u32, MicroprocessorErrors> {
+        if len > 4 {
+            return Err(MicroprocessorErrors::MemoryOverflow)
+        }
+
+        let read_atomic_slice = self.memory.get((from - len)..from).ok_or_else(||MicroprocessorErrors::MemoryOverflow)?;
+
+        let vec_data: Vec<u8> = read_atomic_slice
+            .iter()
+            .map(|atomic| atomic.load(Ordering::Relaxed)).collect();
+
+        let mut data_array = [0u8; 4];
+        data_array[..vec_data.len()].copy_from_slice(&vec_data);
+
+        Ok(u32::from_le_bytes(data_array))
+    }
+
+
     pub fn read_ram(&self, from: usize, len: usize) -> Result<u32, MicroprocessorErrors> {
         if len > 4 {
             return Err(MicroprocessorErrors::MemoryOverflow)
@@ -49,29 +67,35 @@ impl Ram {
         Ok(())
     }
 
-    pub fn test(&self) {
-        //test
-        //push8 10
-        //push8 10
+    pub fn test(&mut self) {
+        //foo:
+        //    nop;
+        //    nop;
+        //    ret;
 
-        self.memory[0].store(1, Ordering::Relaxed);//push opcode
-        self.memory[1].store(0, Ordering::Relaxed);//push opcode
-        self.memory[2].store(1, Ordering::Relaxed);//push param(push 1 byte)
-        self.memory[3].store(8, Ordering::Relaxed);//push 8
+        //main:
+        //    call foo;
+        //    jmp main;
+        self.memory[0].store(0x04, Ordering::Relaxed);//nop opcode
+        self.memory[1].store(0x00, Ordering::Relaxed);//nop opcode
+        self.memory[2].store(0x04, Ordering::Relaxed);//nop opcode
+        self.memory[3].store(0x00, Ordering::Relaxed);//nop opcode
+        self.memory[4].store(0x08, Ordering::Relaxed);//ret opcode
+        self.memory[5].store(0x00, Ordering::Relaxed);//ret opcode
 
-        self.memory[4].store(1, Ordering::Relaxed);//push opcode
-        self.memory[5].store(0, Ordering::Relaxed);//push opcode
-        self.memory[6].store(1, Ordering::Relaxed);//push param(push 1 byte)
-        self.memory[7].store(10, Ordering::Relaxed);//push 10
+        //function main
+        self.memory[6].store(0x07, Ordering::Relaxed);//call opcode
+        self.memory[7].store(0x00, Ordering::Relaxed);//call opcode
+        self.memory[8].store(0x00, Ordering::Relaxed);//call param (jmp to 0x00000000)
+        self.memory[9].store(0x00, Ordering::Relaxed);//call param
+        self.memory[10].store(0x00, Ordering::Relaxed);//call param
+        self.memory[11].store(0x00, Ordering::Relaxed);//call param
 
-
-
-        self.memory[8].store(3, Ordering::Relaxed);//add opcode
-        self.memory[9].store(0, Ordering::Relaxed);//push opcode
-        self.memory[10].store(1, Ordering::Relaxed);//push param(push 1 byte)
-
-
-        self.memory[11].store(0, Ordering::Relaxed);
-
+        self.memory[12].store(0x06, Ordering::Relaxed);//jmp opcode
+        self.memory[13].store(0x00, Ordering::Relaxed);//jmp opcode
+        self.memory[14].store(0x06, Ordering::Relaxed);//jmp param (jmp to pc 0x00000006)
+        self.memory[15].store(0x00, Ordering::Relaxed);//jmp param
+        self.memory[16].store(0x00, Ordering::Relaxed);//jmp param
+        self.memory[17].store(0x00, Ordering::Relaxed);//jmp param
     }
 }

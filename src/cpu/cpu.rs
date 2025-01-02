@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::cpu::errors::MicroprocessorErrors;
-use crate::cpu::instruction::{Add, ADD_OPCODE, Halt, HLT_OPCODE, Instruction, OPCODE_SIZE, Pop, POP_OPCODE, Push, PUSH_OPCODE};
+use crate::cpu::instruction::*;
 use crate::cpu::registers::Registers;
 use crate::ram::ram::Ram;
 
@@ -18,7 +18,12 @@ impl CPU {
                 (HLT_OPCODE, Box::new(Halt) as Box<dyn Instruction>),
                 (PUSH_OPCODE, Box::new(Push) as Box<dyn Instruction>),
                 (POP_OPCODE, Box::new(Pop) as Box<dyn Instruction>),
-                (ADD_OPCODE, Box::new(Add) as Box<dyn Instruction>)
+                (ADD_OPCODE, Box::new(Add) as Box<dyn Instruction>),
+                (NOP_OPCODE, Box::new(Nop) as Box<dyn Instruction>),
+                (PUSHALL_OPCODE, Box::new(PushAll) as Box<dyn Instruction>),
+                (JMP_OPCODE, Box::new(Jmp) as Box<dyn Instruction>),
+                (CALL_OPCODE, Box::new(Call) as Box<dyn Instruction>),
+                (RET_OPCODE, Box::new(Ret) as Box<dyn Instruction>),
             ]),
         }
     }
@@ -32,11 +37,9 @@ impl CPU {
         loop {
             let istr = self.fetch_istr(ram)?;
 
-            println!("--------------------------");
             istr.exec().into_iter().try_for_each(|microinstruction: Box<dyn Fn(&mut CPU, &mut Ram) -> Result<(), MicroprocessorErrors>>| -> Result<(), MicroprocessorErrors> {
                 microinstruction(self, ram)
             })?;
-            println!("--------------------------");
 
             if !self.registers.poweron() {
                 break;
